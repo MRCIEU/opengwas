@@ -9,6 +9,7 @@ Deployment
 
 Data management
 
+- https://github.com/MRCIEU/opengwas-manual-uploads
 - github.com/MRCIEU/igd-elasticsearch / https://github.com/MRCIEU/OpenGWAS-Elasticsearch-HPC
 - github.com/MRCIEU/gwas2vcf
 - https://github.com/MRCIEU/gwas2vcfweb
