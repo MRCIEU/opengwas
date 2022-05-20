@@ -10,13 +10,13 @@ Deployment
 Data management
 
 - https://github.com/MRCIEU/opengwas-manual-uploads
-- github.com/MRCIEU/igd-elasticsearch / https://github.com/MRCIEU/OpenGWAS-Elasticsearch-HPC
-- github.com/MRCIEU/gwas2vcf
+- https://github.com/MRCIEU/igd-elasticsearch / https://github.com/MRCIEU/OpenGWAS-Elasticsearch-HPC
+- https://github.com/MRCIEU/gwas2vcf
 - https://github.com/MRCIEU/gwas2vcfweb
-- github.com/MRCIEU/gwas_processing
+- https://github.com/MRCIEU/gwas_processing
 - https://github.com/MRCIEU/opengwas-requests
 - https://github.com/MRCIEU/opengwas-reports
-- github.com/MRCIEU/GwasDataImport
+- https://github.com/MRCIEU/GwasDataImport
 - https://ieugit-scmv-d0.epi.bris.ac.uk/gh13047/igd-metadata
 - https://github.com/MRCIEU/CheckSumStats
 - https://github.com/MRCIEU/IGD-elasticsearch
