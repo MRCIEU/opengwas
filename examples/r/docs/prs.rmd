@@ -1,0 +1,138 @@
+---
+title: "Example PRS analysis using GWAS VCF files"
+author: "Gibran Hemani"
+date: "`Sys.Date()`"
+output: "html_document"
+---
+
+## Introduction
+
+GWAS-VCF files can be used to generate the PRS weights at user-specified p-value thresholds, which can then feed forward into generating scores in datasets that have individual level data.
+
+Note that you can run these commands using the opengwas-r docker image. See the `README.md` for more info.
+
+Load libraries and setup assuming that bcftools and plink2 are on your path
+
+```{r}
+library(dplyr)
+library(ieugwasr)
+library(gwasvcf)
+set_bcftools("bcftools")
+set_plink("plink2")
+```
+
+Get a list of available GWAS datasets
+
+```{r}
+datasets <- gwasinfo()
+glimpse(datasets)
+````
+
+An example dataset is `ieu-a-2` - Body mass index from a European population
+
+```{r}
+datasets %>%
+    filter(id == "ieu-a-2") %>%
+    glimpse()
+```
+
+We can access the GWAS-VCF file from its remote location directly (Oracle Cloud object storage), or download it (plus indexes etc) somewhere local. Examples below are for download but later in this document are examples for remote access.
+
+## Operating on local files
+
+Download them first:
+
+```{r}
+if(!file.exists("ieu-a-2.vcf.gz")) download.file("https://objectstorage.us-ashburn-1.oraclecloud.com/n/idrvm4tkz2a8/b/OpenGWAS/o/ieu-a/ieu-a-2/ieu-a-2.vcf.gz", "ieu-a-2.vcf.gz")
+if(!file.exists("ieu-a-2.vcf.gz.tbi")) download.file("https://objectstorage.us-ashburn-1.oraclecloud.com/n/idrvm4tkz2a8/b/OpenGWAS/o/ieu-a/ieu-a-2/ieu-a-2.vcf.gz.tbi", "ieu-a-2.vcf.gz.tbi")
+```
+
+Looking up results by chromosome-position:
+
+```{r}
+o <- query_gwas("ieu-a-2.vcf.gz", chrompos="1:1000000-1500000")
+o
+```
+
+Lookup results by p-value - this is the usual process for generating a PRS
+
+```{r}
+o <- query_gwas("ieu-a-2.vcf.gz", pval=5e-8)
+o
+```
+
+This results in a bioconductor VCF format dataset. It can be converted into a `granges` object
+
+```{r}
+o %>% vcf_to_granges()
+```
+
+or a `tibble`
+
+```{r}
+o <- o %>% vcf_to_tibble()
+o
+```
+
+We can filter it to have only independent variants
+
+```{r}
+o_clumped <- o %>%
+    mutate(pval=10^-LP) %>%
+    ieugwasr::ld_clump(., bfile="../data/reference/ld/EUR", plink_bin=genetics.binaRies::get_plink_binary())
+o_clumped
+```
+
+This reduces the number of variants from 2041 associations to 78 indpendent hits.
+
+Note that querying by p-value is relatively slow, and if thresholds at multiple SNPs needs to be extracted then it is potentially better to read in the dataset and filter on the in-memory dataset
+
+```{r}
+vcf <- readVcf("ieu-a-2.vcf.gz")
+query_gwas(vcf, pval=5e-8)
+```
+
+Example wrapper function to do this for multiple thresholds:
+
+```{r}
+generate_prs <- function(vcf, pval=10^-c(3:8), bfile, plink_bin)
+{
+    lapply(pval, function(p)
+    {
+        message(p)
+        query_gwas(vcf, pval=p) %>% 
+            vcf_to_tibble() %>% 
+            mutate(threshold = p) %>%
+            ieugwasr::ld_clump(., bfile=bfile, plink_bin=plink_bin)
+    }) %>% bind_rows()
+}
+prs <- generate_prs(vcf, bfile="../data/reference/ld/EUR", plink_bin=genetics.binaRies::get_plink_binary())
+
+# How many SNPs per threshold?
+prs %>% group_by(threshold) %>% summarise(nsnp=n())
+```
+
+In these examples we have used a locally downloaded vcf file. However all operations can also be conducted using a remote vcf file. For example, the `ieu-a-2` dataset is available here:
+
+```{r}
+vcfurl <- "https://objectstorage.us-ashburn-1.oraclecloud.com/n/idrvm4tkz2a8/b/OpenGWAS/o/ieu-a/ieu-a-2/ieu-a-2.vcf.gz"
+```
+
+And queries can be conducted remotely:
+
+```{r}
+o <- query_gwas(vcfurl, pval=5e-8)
+```
+
+## Generating p-value index
+
+To speed up the p-value query it is possible to generate an index for p-values. This is automated for linux on local vcf files only at the moment. If there is a need for it the pvalue index could be generated for all VCF files and stored remotely alongside the original vcf file.
+
+```{r}
+create_pval_index_from_vcf(vcfurl, pval=0.05, indexname="index.pvali")
+query_gwas(vcfurl, pval=5e-8, pvali="index.pvali")
+```
+
+## Future work
+
+- Add connection to tools such as LDPred2 (https://academic.oup.com/bioinformatics/article/36/22-23/5424/6039173) for improving the weights for PRS. This will be done via the gwasglue2 package.
