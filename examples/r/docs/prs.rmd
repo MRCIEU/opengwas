@@ -18,7 +18,7 @@ library(dplyr)
 library(ieugwasr)
 library(gwasvcf)
 set_bcftools("bcftools")
-set_plink("plink2")
+set_plink("plink")
 ```
 
 Get a list of available GWAS datasets
@@ -79,7 +79,7 @@ We can filter it to have only independent variants
 ```{r}
 o_clumped <- o %>%
     mutate(pval=10^-LP) %>%
-    ieugwasr::ld_clump(., bfile="../data/reference/ld/EUR", plink_bin=genetics.binaRies::get_plink_binary())
+    ieugwasr::ld_clump(., bfile="/project/data/reference/ld/EUR", plink_bin=options()$tools_plink)
 o_clumped
 ```
 
@@ -106,7 +106,7 @@ generate_prs <- function(vcf, pval=10^-c(3:8), bfile, plink_bin)
             ieugwasr::ld_clump(., bfile=bfile, plink_bin=plink_bin)
     }) %>% bind_rows()
 }
-prs <- generate_prs(vcf, bfile="../data/reference/ld/EUR", plink_bin=genetics.binaRies::get_plink_binary())
+prs <- generate_prs(vcf, bfile="/project/data/reference/ld/EUR", plink_bin=options()$tools_plink)
 
 # How many SNPs per threshold?
 prs %>% group_by(threshold) %>% summarise(nsnp=n())
@@ -121,7 +121,9 @@ vcfurl <- "https://objectstorage.us-ashburn-1.oraclecloud.com/n/idrvm4tkz2a8/b/O
 And queries can be conducted remotely:
 
 ```{r}
+t1 <- Sys.time()
 o <- query_gwas(vcfurl, pval=5e-8)
+Sys.time() - t1
 ```
 
 ## Generating p-value index
@@ -129,9 +131,25 @@ o <- query_gwas(vcfurl, pval=5e-8)
 To speed up the p-value query it is possible to generate an index for p-values. This is automated for linux on local vcf files only at the moment. If there is a need for it the pvalue index could be generated for all VCF files and stored remotely alongside the original vcf file.
 
 ```{r}
-create_pval_index_from_vcf(vcfurl, pval=0.05, indexname="index.pvali")
+gwasvcf:::create_pval_index_from_vcf(vcfurl, maximum_pval=0.05, indexname="index.pvali")
+t1 <- Sys.time()
 query_gwas(vcfurl, pval=5e-8, pvali="index.pvali")
+Sys.time() - t1
 ```
+
+Timing locally
+
+```{r}
+t1 <- Sys.time()
+query_gwas("ieu-a-2.vcf.gz", pval=5e-8, pvali="index.pvali")
+Sys.time() - t1
+
+t1 <- Sys.time()
+query_gwas("ieu-a-2.vcf.gz", pval=5e-8)
+Sys.time() - t1
+```
+
+Strange that using the pval index is slower remotely but much faster locally. Is the remote query not using the tabix index?
 
 ## Future work
 

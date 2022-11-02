@@ -1,5 +1,9 @@
 FROM bioconductor/bioconductor_docker:devel
 
+RUN sudo apt clean
+RUN sudo apt update
+RUN sudo apt install sqlite3
+
 WORKDIR /project
 
 # Get reference datasets
@@ -30,11 +34,15 @@ RUN wget https://s3.amazonaws.com/plink2-assets/alpha3/plink2_linux_x86_64_20220
     mv plink2 /bin/ && \
     rm plink2_linux_x86_64_20220814.zip
 
-RUN R -e "remotes::install_github('mrcieu/gwasvcf')"
+# Get plink1.9
+RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20220402.zip && \
+    mkdir plinktemp && mv plink_linux_x86_64_20220402.zip plinktemp && cd plinktemp && \
+    unzip plink_linux_x86_64_20220402.zip && \
+    mv plink /bin/ && \
+    cd ../ && rm -r plinktemp
+
 RUN R -e "remotes::install_github('mrcieu/ieugwasr')"
 RUN R -e "remotes::install_github('mrcieu/TwoSampleMR')"
 RUN R -e "install.packages('coloc')"
 RUN R -e "install.packages('susieR')"
-
-RUN sudo apt update
-RUN sudo apt install sqlite3
+RUN R -e "remotes::install_github('mrcieu/gwasvcf')"
