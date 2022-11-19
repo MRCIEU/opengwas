@@ -9,10 +9,6 @@ RUN apt-get update && \
 WORKDIR /project
 
 # Get reference datasets
-
-# Install renv
-ENV RENV_VERSION 0.16.0
-RUN R -e "install.packages('remotes')"
 RUN wget http://fileserve.mrcieu.ac.uk/vcf/annotations.vcf.gz.rsidx; \
     wget http://fileserve.mrcieu.ac.uk/ld/1kg.v3.tgz; \
     mkdir -p data/reference/ld ; \
@@ -43,8 +39,11 @@ RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20220402.zip 
     mv plink /bin/ && \
     cd ../ && rm -r plinktemp
 
-RUN R -e "remotes::install_github('mrcieu/ieugwasr')"
-RUN R -e "remotes::install_github('mrcieu/TwoSampleMR')"
-RUN R -e "install.packages('coloc')"
-RUN R -e "install.packages('susieR')"
-RUN R -e "remotes::install_github('mrcieu/gwasvcf')"
+# Install R packages
+ENV RENV_VERSION 0.16.0
+RUN R -e "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest')); \
+    install.packages(c('tidyverse', 'remotes', 'renv', 'coloc', 'susieR', \
+        'rmarkdown', 'knitr', 'commonmark', 'markdown')); \
+    remotes::install_github('mrcieu/ieugwasr'); \
+    remotes::install_github('mrcieu/TwoSampleMR'); \
+    remotes::install_github('mrcieu/gwasvcf')"
