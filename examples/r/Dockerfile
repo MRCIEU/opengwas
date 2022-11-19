@@ -9,16 +9,16 @@ RUN apt-get update && \
 WORKDIR /project
 
 # Get reference datasets
-RUN wget http://fileserve.mrcieu.ac.uk/vcf/annotations.vcf.gz.rsidx
-RUN wget http://fileserve.mrcieu.ac.uk/ld/1kg.v3.tgz
-RUN mkdir -p data/reference/ld
-RUN mv annotations.vcf.gz.rsidx data/reference/
-RUN mv 1kg.v3.tgz data/reference/ld/
-RUN cd data/reference/ld/ && tar xzvf 1kg.v3.tgz && rm 1kg.v3.tgz && cd -
 
 # Install renv
 ENV RENV_VERSION 0.16.0
 RUN R -e "install.packages('remotes')"
+RUN wget http://fileserve.mrcieu.ac.uk/vcf/annotations.vcf.gz.rsidx; \
+    wget http://fileserve.mrcieu.ac.uk/ld/1kg.v3.tgz; \
+    mkdir -p data/reference/ld ; \
+    mv annotations.vcf.gz.rsidx data/reference/ ; \
+    mv 1kg.v3.tgz data/reference/ld/ ; \
+    cd data/reference/ld/ && tar xzvf 1kg.v3.tgz && rm 1kg.v3.tgz && cd -
 
 # Get bcftools
 ENV BCFTOOLS_VERSION 1.16
