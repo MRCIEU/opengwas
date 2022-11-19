@@ -1,8 +1,10 @@
 FROM bioconductor/bioconductor_docker:devel
 
-RUN sudo apt clean
-RUN sudo apt update
-RUN sudo apt install sqlite3
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        sqlite3 && \
+    apt-get autoremove -y && \
+    apt-get autoclean -y
 
 WORKDIR /project
 
