@@ -1,10 +1,7 @@
-FROM bioconductor/bioconductor_docker:RELEASE_3_16
+FROM eddelbuettel/r2u:jammy
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        sqlite3 && \
-    apt-get autoremove -y && \
-    apt-get autoclean -y
+RUN apt-get install -y --no-install-recommends \
+        sqlite3 libcurl4-openssl-dev
 
 WORKDIR /project
 
@@ -41,8 +38,7 @@ RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20220402.zip 
 
 # Install R packages
 ENV RENV_VERSION 0.16.0
-RUN R -e "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest')); \
-    install.packages(c('tidyverse', 'remotes', 'renv', 'coloc', 'susieR', \
+RUN R -e "install.packages(c('tidyverse', 'remotes', 'renv', 'coloc', 'susieR', \
         'rmarkdown', 'knitr', 'commonmark', 'markdown')); \
     remotes::install_github('mrcieu/ieugwasr'); \
     remotes::install_github('mrcieu/TwoSampleMR'); \

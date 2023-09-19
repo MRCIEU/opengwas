@@ -42,8 +42,9 @@ RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20220402.zip 
 # Install R packages
 ENV RENV_VERSION 0.16.0
 RUN R -e "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest')); \
-    install.packages(c('tidyverse', 'remotes', 'renv', 'coloc', 'susieR', \
+    install.packages('pak'); \
+    pak::pkg_install(c('tidyverse', 'remotes', 'renv', 'coloc', 'susieR', \
         'rmarkdown', 'knitr', 'commonmark', 'markdown')); \
-    remotes::install_github('mrcieu/ieugwasr'); \
-    remotes::install_github('mrcieu/TwoSampleMR'); \
-    remotes::install_github('mrcieu/gwasvcf')"
+    pak::pkg_install('mrcieu/ieugwasr'); \
+    pak::pkg_install('mrcieu/TwoSampleMR'); \
+    pak::pkg_install('remlapmot/gwasvcf@fixes-11-2022')"
