@@ -1,6 +1,9 @@
 [
   {
     "date": "2024-03-07",
-    "message": "> Due to exceptional load on the OpenGWAS servers we need to perform extensive infrastructure redevelopment which may lead to temporary outages.\\n> Urgent maintenance is now being performed for approximately 48 hours."
+    "message": [
+      "> Due to exceptional load on the OpenGWAS servers we need to perform extensive infrastructure redevelopment which may lead to temporary outages.",
+      "> Urgent maintenance is now being performed for approximately 48 hours."
+    ]
   }
 ]
