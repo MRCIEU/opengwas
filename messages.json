@@ -4,8 +4,7 @@
     "message": [
       "[>] There is exceptional load on the OpenGWAS servers.",
       "[>] Urgent infrastructure development being performed.",
-      "[>] The servers will be unavailable for approximately 48 hrs.",
-      "[>] See other options for analysis: https://mrcieu.github.io/gwasvcf/."
+      "[>] See local options for analysis: https://mrcieu.github.io/gwasvcf/."
     ]
   }
 ]
