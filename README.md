@@ -39,8 +39,14 @@ Analytical tools
 
 Applied
 
+- mr-eve
+- coloc-eve
 
+Analytics
 
+- OCI elastic/Kibana `ssh  -f -N -L 5602:132.226.129.208:5601 ieu-db-interface.epi.bris.ac.uk` and then open http://localhost:5602
+- MR-Base shiny on google analytics - https://analytics.google.com/analytics/web/#/report-home/a64755036w117456758p122852687
+- gwas.mrcieu.ac.uk on google analytics - https://analytics.google.com/analytics/web/#/report-home/a143778740w205196691p198413597
 
 
 
