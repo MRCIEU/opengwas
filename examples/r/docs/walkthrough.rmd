@@ -1,0 +1,139 @@
+---
+title: OpenGWAS walkthrough
+author: Gibran Hemani
+date: 2025-05-08
+---
+
+## Background
+
+The objective of OpenGWAS is to reduce the friction between applying statistical methods to GWAS summary data, and to make use of having a large amount of GWAS summary data easily queryable and harmonised in one place.
+
+![OpenGWAS ecosystem](https://gwas.mrcieu.ac.uk/static/images/gwas_ecosystem.bb869525db1a.png)
+
+## Outline
+
+- Installation
+- Authenticating to access OpenGWAS
+- Performing colocalisation between two traits at a specific locus using the cloud or running locally
+- LD matrix operations
+
+## Installation
+
+The OpenGWAS ecosystem includes a number of packages. To help with installation they have been pre-compiled on R-universe here: https://mrcieu.r-universe.dev/builds
+
+Let's install the following packages:
+
+- `ieugwasr` - an R interface to the OpenGWAS API
+- `gwasvcf` - an R interface to the VCF files that can be analysed locally
+- `TwoSampleMR` - an R package for Mendelian randomisation using summary data
+- `gwasglue` - an R package for connecting GWAS summary data to other methods
+
+```{r}
+install.packages(c('TwoSampleMR', 'ieugwasr', 'gwasglue', 'coloc'), repos = c('https://mrcieu.r-universe.dev', 'https://cloud.r-project.org'))
+```
+
+Install gwasvcf using pre-compiled binaries:
+
+```{r}
+install.packages("BiocManager", repos = c('https://bioc.r-universe.dev', 'https://cloud.r-project.org'))
+BiocManager::install("VariantAnnotation")
+install.packages('gwasvcf', repos = c('https://mrcieu.r-universe.dev', 'https://cloud.r-project.org'))
+library(gwasvcf)
+```
+
+or in the standard way:
+
+```{r}
+remotes::install_github("mrcieu/gwasvcf", force=TRUE)
+```
+
+Note that docker images are available for some of these packages also - https://hub.docker.com/u/mrcieu
+
+## Authenticating to access OpenGWAS
+
+1. Visit here: https://api.opengwas.io/
+2. Generate a token
+3. Save the token in a file called `.Renviron` in your home directory. The file should contain the following line: `OPENGWAS_JWT=your token here`
+4. Either restart R or run `readRenviron("~/.Renviron")` 
+
+You can reset your token at any time using the website. Just remember to update your `.Renviron` file with the new token.
+
+## What traits are available?
+
+- Search at [https://gwas.mrcieu.ac.uk/](https://gwas.mrcieu.ac.uk/)
+- Use your own GWAS summary data
+
+## Performing colocalisation
+
+For this analysis you need to extract a region of interest from two traits and then run the colocalisation analysis. We'll obtain VCF files and perform the analysis. Instructions here: https://mrcieu.github.io/gwasglue/articles/colocalisation.html
+
+```{r}
+library(ieugwasr)
+library(gwasglue)
+library(dplyr)
+library(gassocplot)
+library(genetics.binaRies)
+library(coloc)
+set_bcftools()
+```
+
+
+
+
+We'll look at a variant associating with LDL cholesterol levels and coronary heart disease. 
+
+```{r}
+links <- gwasinfo_files(c("ieu-a-300", "ieu-a-7"))
+sapply(unlist(links), function(x) {
+    download.file(x, basename(x))
+})
+
+```
+
+First get a list of top hits for LDL cholesterol:
+
+```{r}
+top <- ieugwasr::tophits('ieu-a-300') %>% arrange(p)
+top
+```
+
+Let's use the top hit, and extract the region around it. Define the region:
+
+```{r}
+chrpos <- paste0(top$chr[1], ":", top$position[1] - 90000, "-", top$position[1] + 90000)
+chrpos
+```
+
+Extract the data from LDL and CHD
+
+```{r}
+out <- gwasvcf_to_coloc(id1='ieu-a-300', id2='ieu-a-7', chrompos=chrpos)
+library(gwasvcf)
+a <- gwasvcf::query_gwas(vcf="ieu-a-300.vcf.gz", chrompos=chrpos)
+
+vout <- gwasvcf_to_coloc("ieu-a-300.vcf.gz", "ieu-a-7.vcf.gz", chrpos)
+```
+
+```{r}
+id1 <- 'ieu-a-300'
+tab1 <- ieugwasr::associations(id = id1, variants = chrpos)
+
+
+
+%>% 
+        subset(., !duplicated(rsid))
+```
+
+
+```{r}
+res <- coloc::coloc.abf(out[[1]], out[[2]])
+```
+
+
+
+
+
+
+
+
+
