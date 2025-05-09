@@ -4,7 +4,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
     apt-get install -yyy \
         build-essential \
         libcurl4-openssl-dev \
-        libcurl4-gnutls-dev \
         libxml2-dev \
         libssl-dev \
         libgmp3-dev \
@@ -51,6 +50,8 @@ RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20241022.zip 
     mv plink /bin/ && \
     cd ../ && rm -r plinktemp
 
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -yyy \
+        libcurl4-gnutls-dev
 
 RUN --mount=type=bind,source=build.r,target=/tmp/build.r \
     Rscript /tmp/build.r

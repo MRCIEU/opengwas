@@ -52,7 +52,7 @@ remotes::install_github("mrcieu/gwasvcf", force=TRUE)
 Note that docker images are available for some of these packages also - https://hub.docker.com/u/mrcieu
 
 ``` bash
-sudo docker run --rm -it -v $(pwd):/workspace -w /workspace mrcieu/opengwas-r R
+docker run --rm -it -v $(pwd):/workspace -w /workspace mrcieu/opengwas-r /bin/bash
 ```
 
 ## Authenticating to access OpenGWAS
@@ -81,21 +81,15 @@ library(dplyr)
 library(coloc)
 library(ggplot2)
 set_bcftools("bcftools")
+readRenviron("env") # Get the OpenGWAS token
 ```
 
 We'll look at a variant associating with LDL cholesterol levels and coronary heart disease. First download the VCF files:
 
-```{r}
-links <- gwasinfo_files(c("ieu-a-300", "ieu-a-7"))
-sapply(unlist(links), function(x) {
-    download.file(x, basename(x))
-})
-```
 
 Get a list of top hits for LDL cholesterol:
 
 ```{r}
-readRenviron("env")
 top <- ieugwasr::tophits('ieu-a-300') %>% arrange(p)
 top
 ```
@@ -107,14 +101,49 @@ chrpos <- paste0(top$chr[1], ":", top$position[1] - 90000, "-", top$position[1] 
 chrpos
 ```
 
+Extract the summary data for this region from the two traits in the cloud:
+
+```{r}
+out <- ieugwasr_to_coloc("ieu-a-300", "ieu-a-7", chrpos)
+str(out)
+```
+
+Perform the colocalisation analysis:
+
+```{r}
+coloc::coloc.abf(out[[1]], out[[2]])
+```
+
+```{r}
+p <- bind_rows(
+    tibble(z = abs(out[[1]]$z), pos = out[[1]]$pos, trait = "LDL cholesterol"),
+    tibble(z = abs(out[[2]]$z), pos = out[[2]]$pos, trait = "Coronary heart disease")
+) %>%
+    ggplot(aes(x = pos, y = z)) +
+        geom_point() +
+        facet_grid(trait ~ ., scales = "free_y")
+ggsave(p, file="ldl_chd2.png", width = 8, height = 8)
+```
+
+
+We can also do this locally by downloading the VCF files. First get links to download the files:
+
+```{r}
+links <- gwasinfo_files(c("ieu-a-300", "ieu-a-7"))
+links
+
+# Download the files
+sapply(unlist(links), function(x) {
+    download.file(x, basename(x))
+})
+```
+
 Extract the data from LDL and CHD, and format it for coloc:
 
 ```{r}
 vout <- gwasvcf_to_coloc("ieu-a-300.vcf.gz", "ieu-a-7.vcf.gz", chrpos)
 str(vout)
 ```
-
-Perform coloc:
 
 ```{r}
 vres <- coloc::coloc.abf(vout[[1]], vout[[2]])
@@ -132,22 +161,6 @@ p <- bind_rows(
         geom_point() +
         facet_grid(trait ~ ., scales = "free_y")
 ggsave(p, file="ldl_chd.png", width = 8, height = 8)
-```
-
-```{r}
-out <- ieugwasr_to_coloc("ieu-a-300", "ieu-a-7", chrpos)
-coloc::coloc.abf(out[[1]], out[[2]])
-```
-
-```{r}
-p <- bind_rows(
-    tibble(z = abs(out[[1]]$z), pos = out[[1]]$pos, trait = "LDL cholesterol"),
-    tibble(z = abs(out[[2]]$z), pos = out[[2]]$pos, trait = "Coronary heart disease")
-) %>%
-    ggplot(aes(x = pos, y = z)) +
-        geom_point() +
-        facet_grid(trait ~ ., scales = "free_y")
-ggsave(p, file="ldl_chd2.png", width = 8, height = 8)
 ```
 
 ## Perform a PheWAS analysis using the OpenGWAS API
@@ -202,3 +215,8 @@ Note that clumping can be performed on non-VCF files, or on the data within Open
 - Linking to other tools - https://mrcieu.github.io/gwasglue/
 - Examining pleiotropy - https://explodecomputer.github.io/tryx/
 - Multi-ancestry MR and other analyses - https://mrcieu.github.io/CAMERA/
+
+- There is a blog that will be updated with relevant changes and information relating to OpenGWAS - https://opengwas.github.io/
+- Note that whenever you load the TwoSampleMR package it will relay a message - this often provides critical recent information.
+
+
