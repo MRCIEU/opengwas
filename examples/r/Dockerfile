@@ -1,7 +1,22 @@
-FROM eddelbuettel/r2u:jammy
-
-RUN apt-get install -y --no-install-recommends \
-        sqlite3 libcurl4-openssl-dev
+FROM rocker/r-ver:4.5.0
+WORKDIR /usr/local/src/myscripts
+RUN DEBIAN_FRONTEND=noninteractive apt-get update && \
+    apt-get install -yyy \
+        build-essential \
+        libcurl4-openssl-dev \
+        libcurl4-gnutls-dev \
+        libxml2-dev \
+        libssl-dev \
+        libgmp3-dev \
+        cmake \
+        libcairo2-dev \
+        libxt-dev \
+        libharfbuzz-dev \
+        libtiff-dev \
+        libstdc++6 \
+        pandoc \
+        sqlite3 \
+        wget
 
 WORKDIR /project
 
@@ -24,22 +39,18 @@ RUN wget https://github.com/samtools/bcftools/releases/download/${BCFTOOLS_VERSI
     rm -r bcftools-${BCFTOOLS_VERSION} bcftools-${BCFTOOLS_VERSION}.tar.bz2
 
 # Get plink2
-RUN wget https://s3.amazonaws.com/plink2-assets/alpha3/plink2_linux_x86_64_20220814.zip && \
-    unzip plink2_linux_x86_64_20220814.zip && \
+RUN wget https://s3.amazonaws.com/plink2-assets/alpha6/plink2_linux_avx2_20250420.zip && \
+    unzip plink2_linux_avx2_20250420.zip && \
     mv plink2 /bin/ && \
-    rm plink2_linux_x86_64_20220814.zip
+    rm plink2_linux_avx2_20250420.zip
 
 # Get plink1.9
-RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20220402.zip && \
-    mkdir plinktemp && mv plink_linux_x86_64_20220402.zip plinktemp && cd plinktemp && \
-    unzip plink_linux_x86_64_20220402.zip && \
+RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20241022.zip && \
+    mkdir plinktemp && mv plink_linux_x86_64_20241022.zip plinktemp && cd plinktemp && \
+    unzip plink_linux_x86_64_20241022.zip && \
     mv plink /bin/ && \
     cd ../ && rm -r plinktemp
 
-# Install R packages
-ENV RENV_VERSION 0.16.0
-RUN R -e "install.packages(c('tidyverse', 'remotes', 'renv', 'coloc', 'susieR', \
-        'rmarkdown', 'knitr', 'commonmark', 'markdown')); \
-    remotes::install_github('mrcieu/ieugwasr'); \
-    remotes::install_github('mrcieu/TwoSampleMR'); \
-    remotes::install_github('mrcieu/gwasvcf')"
+
+RUN --mount=type=bind,source=build.r,target=/tmp/build.r \
+    Rscript /tmp/build.r
