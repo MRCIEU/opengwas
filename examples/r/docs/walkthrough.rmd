@@ -10,10 +10,15 @@ The objective of OpenGWAS is to reduce the friction between applying statistical
 
 ![OpenGWAS ecosystem](https://gwas.mrcieu.ac.uk/static/images/gwas_ecosystem.bb869525db1a.png)
 
+The OpenGWAS ecosystem intends to be a modular set of tools that interact with data relatively consistently and flexibly. In some instances there are defaults put in place for analytical convenience, but the general philosophy is that many analyses will need to be performed in a way that is specific to the particular question being asked.
+
+This document talks through some of the basic functionality that aims to be useful for this wide range of analyses.
+
 ## Outline
 
 - Installation
 - Authenticating to access OpenGWAS
+- Querying the database, Mendelian randomization example
 - Performing colocalisation between two traits at a specific locus using the cloud or running locally
 - Perform a PheWAS analysis using the OpenGWAS API
 - LD matrix operations
@@ -69,7 +74,7 @@ You can reset your token at any time using the website. Just remember to update 
 - Search at [https://gwas.mrcieu.ac.uk/](https://gwas.mrcieu.ac.uk/)
 - Use your own GWAS summary data
 
-## Performing colocalisation
+## Performing Mendelian randomization of complex traits
 
 For this analysis you need to extract a region of interest from two traits and then run the colocalisation analysis. We'll obtain VCF files and perform the analysis. Instructions here: https://mrcieu.github.io/gwasglue/articles/colocalisation.html
 
@@ -94,7 +99,28 @@ top <- ieugwasr::tophits('ieu-a-300') %>% arrange(p)
 top
 ```
 
-Let's use the top hit, and extract the region around it. Define the region:
+These variants can be extracted from the CHD dataset:
+
+```{r}
+chd_ldl <- associations(top$rsid, "ieu-a-7")
+str(chd_ldl)
+```
+
+Note that if a variant is not present in the dataset, by default an LD proxy will be searched for, and the LD proxy alleles will be aligned accordingly.
+
+Note also that all the variants have effect alleles and non-effect alleles that are oriented in a consistent way. The non-effect allele is always the human genome reference sequence allele. Therefore the effect sizes for the LDL and CHD datasets can be directly compared as they are both with respect to the same effect alleles.
+
+We can create a dataset to perform a Mendelian randomisation analysis using the `TwoSampleMR` package. This is a package that is designed to perform MR analyses using summary data.
+
+```{r}
+library(TwoSampleMR)
+dat <- TwoSampleMR::make_dat("ieu-a-300", "ieu-a-7")
+TwoSampleMR::mr(dat)
+```
+
+## Performing colocalisation between two traits at a specific locus
+
+For colocalisation, let's use the top hit, and extract the region around it. Define the region:
 
 ```{r}
 chrpos <- paste0(top$chr[1], ":", top$position[1] - 90000, "-", top$position[1] + 90000)
@@ -129,7 +155,7 @@ ggsave(p, file="ldl_chd2.png", width = 8, height = 8)
 We can also do this locally by downloading the VCF files. First get links to download the files:
 
 ```{r}
-links <- gwasinfo_files(c("ieu-a-300", "ieu-a-7"))
+links <- ieugwasr::gwasinfo_files(c("ieu-a-300", "ieu-a-7"))
 links
 
 # Download the files
@@ -141,7 +167,7 @@ sapply(unlist(links), function(x) {
 Extract the data from LDL and CHD, and format it for coloc:
 
 ```{r}
-vout <- gwasvcf_to_coloc("ieu-a-300.vcf.gz", "ieu-a-7.vcf.gz", chrpos)
+vout <- gwasglue::gwasvcf_to_coloc("ieu-a-300.vcf.gz", "ieu-a-7.vcf.gz", chrpos)
 str(vout)
 ```
 
@@ -202,7 +228,7 @@ chd
 This found 2022 SNPs. Let's clump using a p-val threshold of 1e-6
 
 ```{r}
-chd_clumped <- clump_gwasvcf(chd, bfile="/project/data/reference/ld/EUR", plink_bin="plink", clump_p = 1e-6)
+chd_clumped <- gwasglue::clump_gwasvcf(chd, bfile="/project/data/reference/ld/EUR", plink_bin="plink", clump_p = 1e-6)
 chd_clumped
 ```
 
