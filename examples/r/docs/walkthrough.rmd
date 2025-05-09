@@ -57,7 +57,7 @@ remotes::install_github("mrcieu/gwasvcf", force=TRUE)
 Note that docker images are available for some of these packages also - https://hub.docker.com/u/mrcieu
 
 ``` bash
-docker run --rm -it -v $(pwd):/workspace -w /workspace mrcieu/opengwas-r /bin/bash
+docker run --rm -it -v $(pwd):/workspace -w /workspace mrcieu/opengwas-r:0.1.0 /bin/bash
 ```
 
 ## Authenticating to access OpenGWAS
@@ -85,6 +85,7 @@ library(gwasglue)
 library(dplyr)
 library(coloc)
 library(ggplot2)
+library(TwoSampleMR)
 set_bcftools("bcftools")
 readRenviron("env") # Get the OpenGWAS token
 ```
