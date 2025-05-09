@@ -12,7 +12,7 @@ One approach to easily install these packages is to use the docker image that al
 To get an interactive console:
 
 ```bash
-docker run --rm -it -v $(pwd):/workspace -w /workspace mrcieu/opengwas-r:0.1.6 R
+sudo docker run --rm -it -v $(pwd):/workspace -w /workspace mrcieu/opengwas-r R
 ```
 
 To get an RStudio session at http://localhost:8787 

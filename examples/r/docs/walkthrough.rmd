@@ -15,7 +15,9 @@ The objective of OpenGWAS is to reduce the friction between applying statistical
 - Installation
 - Authenticating to access OpenGWAS
 - Performing colocalisation between two traits at a specific locus using the cloud or running locally
+- Perform a PheWAS analysis using the OpenGWAS API
 - LD matrix operations
+- Documentation and vignettes
 
 ## Installation
 
@@ -131,3 +133,72 @@ p <- bind_rows(
         facet_grid(trait ~ ., scales = "free_y")
 ggsave(p, file="ldl_chd.png", width = 8, height = 8)
 ```
+
+```{r}
+out <- ieugwasr_to_coloc("ieu-a-300", "ieu-a-7", chrpos)
+coloc::coloc.abf(out[[1]], out[[2]])
+```
+
+```{r}
+p <- bind_rows(
+    tibble(z = abs(out[[1]]$z), pos = out[[1]]$pos, trait = "LDL cholesterol"),
+    tibble(z = abs(out[[2]]$z), pos = out[[2]]$pos, trait = "Coronary heart disease")
+) %>%
+    ggplot(aes(x = pos, y = z)) +
+        geom_point() +
+        facet_grid(trait ~ ., scales = "free_y")
+ggsave(p, file="ldl_chd2.png", width = 8, height = 8)
+```
+
+## Perform a PheWAS analysis using the OpenGWAS API
+
+A benefit of collating GWAS summary data in one place is that it allows for analysis across all traits. A PheWAS analysis tests a single variant for association against a large number of traits.
+
+Let's use the same variant as above, and test it against all traits in the OpenGWAS database. We'll use the `ieugwasr` package to do this.
+
+```{r}
+ldl_phewas <- ieugwasr::phewas(top$rsid[1])
+ldl_phewas %>% select(trait, beta, p) %>% slice_head(n=50) %>% as.data.frame()
+```
+
+## LD operations
+
+A lot of the analyses that use GWAS summary data require LD information. 
+
+Generate an LD matrix for a set of variants using the 1000G EUR reference panel:
+
+```{r}
+ld <- ieugwasr::ld_matrix(top$rsid, pop="EUR")
+ld[1:10,1:10]
+```
+
+This is an already clumped dataset, so we can see that it actually has very little LD between the variants. Note that LD matrix operations can be performed using a local LD reference panel:
+
+```{r}
+ld <- ieugwasr::ld_matrix(top$rsid, bfile="/project/data/reference/ld/EUR", plink_bin="plink")
+ld[1:10,1:10]
+```
+
+Clumping can also be performed. For example let's read in all SNPs with p < 5e-8 from CHD
+
+```{r}
+chd <- gwasvcf::query_gwas("ieu-a-7.vcf.gz", pval=5e-8)
+chd 
+```
+
+This found 2022 SNPs. Let's clump using a p-val threshold of 1e-6
+
+```{r}
+chd_clumped <- clump_gwasvcf(chd, bfile="/project/data/reference/ld/EUR", plink_bin="plink", clump_p = 1e-6)
+chd_clumped
+```
+
+Note that clumping can be performed on non-VCF files, or on the data within OpenGWAS on the cloud also. See vignettes e.g. https://mrcieu.github.io/ieugwasr/
+
+## Documentation and vignettes
+
+- OpenGWAS API documentation - https://api.opengwas.io/
+- Mendelian randomization - https://mrcieu.github.io/TwoSampleMR/
+- Linking to other tools - https://mrcieu.github.io/gwasglue/
+- Examining pleiotropy - https://explodecomputer.github.io/tryx/
+- Multi-ancestry MR and other analyses - https://mrcieu.github.io/CAMERA/
